@@ -1,0 +1,103 @@
+name: Deploy jpetstore-6 to Tomcat
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build WAR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build WAR file
+        run: |
+          cd jpetstore-6
+          mvn clean package
+
+      - name: Upload WAR artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: jpetstore-6-war
+          path: jpetstore-6/target/jpetstore-6.war
+
+# ----------------------------
+# Deployment Jobs
+# ----------------------------
+
+  deploy-dev:
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download WAR artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: jpetstore-6-war
+          path: .
+
+      - name: Deploy to Dev Tomcat
+        run: |
+          curl -u ${{ secrets.TOMCAT_USER_DEV }}:${{ secrets.TOMCAT_PASS_DEV }} \
+          -T jpetstore-6.war \
+          "${{ secrets.TOMCAT_URL_DEV }}/manager/text/deploy?path=/jpetstore-6&update=true"
+
+  deploy-test:
+    name: Deploy to Test
+    runs-on: ubuntu-latest
+    needs: deploy-dev
+    steps:
+      - name: Download WAR artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: jpetstore-6-war
+          path: .
+
+      - name: Deploy to Test Tomcat
+        run: |
+          curl -u ${{ secrets.TOMCAT_USER_TEST }}:${{ secrets.TOMCAT_PASS_TEST }} \
+          -T jpetstore-6.war \
+          "${{ secrets.TOMCAT_URL_TEST }}/manager/text/deploy?path=/jpetstore-6&update=true"
+
+  deploy-preprod:
+    name: Deploy to Pre-prod
+    runs-on: ubuntu-latest
+    needs: deploy-test
+    steps:
+      - name: Download WAR artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: jpetstore-6-war
+          path: .
+
+      - name: Deploy to Pre-prod Tomcat
+        run: |
+          curl -u ${{ secrets.TOMCAT_USER_PREPROD }}:${{ secrets.TOMCAT_PASS_PREPROD }} \
+          -T jpetstore-6.war \
+          "${{ secrets.TOMCAT_URL_PREPROD }}/manager/text/deploy?path=/jpetstore-6&update=true"
+
+  deploy-prod:
+    name: Deploy to Prod
+    runs-on: ubuntu-latest
+    needs: deploy-preprod
+    steps:
+      - name: Download WAR artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: jpetstore-6-war
+          path: .
+
+      - name: Deploy to Prod Tomcat
+        run: |
+          curl -u ${{ secrets.TOMCAT_USER_PROD }}:${{ secrets.TOMCAT_PASS_PROD }} \
+          -T jpetstore-6.war \
+          "${{ secrets.TOMCAT_URL_PROD }}/manager/text/deploy?path=/jpetstore-6&update=true"
