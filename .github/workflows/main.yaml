@@ -3,7 +3,7 @@ name: Deploy JPetStore
 on:
   push:
     branches:
-      - main  # Trigger on main branch
+      - master  # Trigger on main branch
   workflow_dispatch: # Allow manual trigger
 
 jobs:
@@ -113,3 +113,4 @@ jobs:
           -Dcargo.hostname=${{ secrets.PROD_HOST }} \
           -Dcargo.remote.username=${{ secrets.PROD_USER }} \
           -Dcargo.remote.password=${{ secrets.PROD_PASSWORD }}
+
