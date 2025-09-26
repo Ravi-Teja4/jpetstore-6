@@ -3,7 +3,7 @@ name: Deploy jpetstore-6 to Tomcat
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   build:
@@ -101,3 +101,4 @@ jobs:
           curl -u ${{ secrets.TOMCAT_USER_PROD }}:${{ secrets.TOMCAT_PASS_PROD }} \
           -T jpetstore-6.war \
           "${{ secrets.TOMCAT_URL_PROD }}/manager/text/deploy?path=/jpetstore-6&update=true"
+
