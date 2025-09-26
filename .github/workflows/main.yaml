@@ -1,36 +1,30 @@
-name: Deploy JPetStore
+name: JPetStore Deployment
 
 on:
   push:
     branches:
-      - master  # Trigger on main branch
-  workflow_dispatch: # Allow manual trigger
+      - master
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Checkout repository
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Set up JDK
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: temurin
           java-version: 17
 
-      # Cache Maven dependencies
-      - name: Cache Maven Packages
+      - name: Cache Maven packages
         uses: actions/cache@v3
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
 
-      # Build the WAR
       - name: Build WAR
         run: mvn clean package -DskipTests
 
@@ -49,10 +43,14 @@ jobs:
 
       - name: Deploy to Dev
         run: |
-          mvn clean package cargo:redeploy -Ptomcat90 -Denv=dev \
-          -Dcargo.hostname=${{ secrets.DEV_HOST }} \
-          -Dcargo.remote.username=${{ secrets.DEV_USER }} \
-          -Dcargo.remote.password=${{ secrets.DEV_PASSWORD }}
+          mvn cargo:redeploy \
+            -Ptomcat90 \
+            -Dcargo.deployable.file=target/jpetstore.war \
+            -Dcargo.remote.username=${{ secrets.TOMCAT_USER_DEV }} \
+            -Dcargo.remote.password=${{ secrets.TOMCAT_PASS_DEV }} \
+            -Dcargo.hostname=${{ secrets.TOMCAT_URL_DEV }} \
+            -Dcargo.protocol=http \
+            -Dcargo.containerId=tomcat9x
 
   deploy-test:
     runs-on: ubuntu-latest
@@ -69,10 +67,14 @@ jobs:
 
       - name: Deploy to Test
         run: |
-          mvn clean package cargo:redeploy -Ptomcat90 -Denv=test \
-          -Dcargo.hostname=${{ secrets.TEST_HOST }} \
-          -Dcargo.remote.username=${{ secrets.TEST_USER }} \
-          -Dcargo.remote.password=${{ secrets.TEST_PASSWORD }}
+          mvn cargo:redeploy \
+            -Ptomcat90 \
+            -Dcargo.deployable.file=target/jpetstore.war \
+            -Dcargo.remote.username=${{ secrets.TOMCAT_USER_TEST }} \
+            -Dcargo.remote.password=${{ secrets.TOMCAT_PASS_TEST }} \
+            -Dcargo.hostname=${{ secrets.TOMCAT_URL_TEST }} \
+            -Dcargo.protocol=http \
+            -Dcargo.containerId=tomcat9x
 
   deploy-preprod:
     runs-on: ubuntu-latest
@@ -89,10 +91,14 @@ jobs:
 
       - name: Deploy to Pre-Prod
         run: |
-          mvn clean package cargo:redeploy -Ptomcat90 -Denv=preprod \
-          -Dcargo.hostname=${{ secrets.PREPROD_HOST }} \
-          -Dcargo.remote.username=${{ secrets.PREPROD_USER }} \
-          -Dcargo.remote.password=${{ secrets.PREPROD_PASSWORD }}
+          mvn cargo:redeploy \
+            -Ptomcat90 \
+            -Dcargo.deployable.file=target/jpetstore.war \
+            -Dcargo.remote.username=${{ secrets.TOMCAT_USER_PREPROD }} \
+            -Dcargo.remote.password=${{ secrets.TOMCAT_PASS_PREPROD }} \
+            -Dcargo.hostname=${{ secrets.TOMCAT_URL_PREPROD }} \
+            -Dcargo.protocol=http \
+            -Dcargo.containerId=tomcat9x
 
   deploy-prod:
     runs-on: ubuntu-latest
@@ -109,8 +115,11 @@ jobs:
 
       - name: Deploy to Prod
         run: |
-          mvn clean package cargo:redeploy -Ptomcat90 -Denv=prod \
-          -Dcargo.hostname=${{ secrets.PROD_HOST }} \
-          -Dcargo.remote.username=${{ secrets.PROD_USER }} \
-          -Dcargo.remote.password=${{ secrets.PROD_PASSWORD }}
-
+          mvn cargo:redeploy \
+            -Ptomcat90 \
+            -Dcargo.deployable.file=target/jpetstore.war \
+            -Dcargo.remote.username=${{ secrets.TOMCAT_USER_PROD }} \
+            -Dcargo.remote.password=${{ secrets.TOMCAT_PASS_PROD }} \
+            -Dcargo.hostname=${{ secrets.TOMCAT_URL_PROD }} \
+            -Dcargo.protocol=http \
+            -Dcargo.containerId=tomcat9x
